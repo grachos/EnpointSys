@@ -715,34 +715,33 @@ export default function App() {
         </Suspense>
       ) : (
         <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar (Desktop Collapsible) */}
-          {!isSidebarCollapsed && (
-            <Sidebar
-              collections={collections}
-              activeRequestId={activeRequest?.id}
-              onSelectRequest={handleSelectRequestFromTree}
-              onCreateCollection={handleCreateCollection}
-              onCreateFolder={handleCreateFolder}
-              onCreateRequest={handleCreateRequest}
-              onDeleteNode={handleDeleteNode}
-              onReorderCollections={setCollections}
-              history={history}
-              onSelectHistoryItem={handleSelectHistoryItem}
-              environments={environments}
-              activeEnvId={activeEnvId}
-              onSelectEnvironment={setActiveEnvId}
-              onOpenEnvModal={() => setIsEnvModalOpen(true)}
-              lang={lang}
-              isMobileOpen={isMobileSidebarOpen}
-              onCloseMobile={() => setIsMobileSidebarOpen(false)}
-              onToggleSidebarCollapse={() => setIsSidebarCollapsed(true)}
-              expandedCollections={expandedCollections}
-              onToggleExpandCollection={handleToggleExpandCollection}
-              currentUser={currentUser}
-              onOpenLoginModal={() => setIsLoginModalOpen(true)}
-              onLogout={handleLogout}
-            />
-          )}
+          {/* Left Sidebar (Desktop Collapsible, Mobile Drawer always available) */}
+          <Sidebar
+            collections={collections}
+            activeRequestId={activeRequest?.id}
+            onSelectRequest={handleSelectRequestFromTree}
+            onCreateCollection={handleCreateCollection}
+            onCreateFolder={handleCreateFolder}
+            onCreateRequest={handleCreateRequest}
+            onDeleteNode={handleDeleteNode}
+            onReorderCollections={setCollections}
+            history={history}
+            onSelectHistoryItem={handleSelectHistoryItem}
+            environments={environments}
+            activeEnvId={activeEnvId}
+            onSelectEnvironment={setActiveEnvId}
+            onOpenEnvModal={() => setIsEnvModalOpen(true)}
+            lang={lang}
+            isCollapsed={isSidebarCollapsed}
+            isMobileOpen={isMobileSidebarOpen}
+            onCloseMobile={() => setIsMobileSidebarOpen(false)}
+            onToggleSidebarCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            expandedCollections={expandedCollections}
+            onToggleExpandCollection={handleToggleExpandCollection}
+            currentUser={currentUser}
+            onOpenLoginModal={() => setIsLoginModalOpen(true)}
+            onLogout={handleLogout}
+          />
 
           {/* Center Main Work Area */}
           <main className="flex-1 flex flex-col overflow-hidden bg-dark-950">

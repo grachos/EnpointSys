@@ -56,23 +56,25 @@ export default function Header({
     <header className="h-14 bg-dark-900 border-b border-dark-800 flex items-center justify-between px-3 md:px-5 z-20 flex-shrink-0 select-none">
       {/* LEFT CLUSTER: Sidebar Toggle, Brand & Environment Selector */}
       <div className="flex items-center space-x-3">
-        {/* Mobile Hamburger Toggle */}
-        <button
-          onClick={onToggleMobileSidebar}
-          className="md:hidden p-1.5 rounded hover:bg-dark-850 text-slate-400 hover:text-slate-100"
-          title="Toggle Mobile Drawer"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
+        {/* Mobile Hamburger Toggle (workspace mode only) */}
+        {viewMode === 'workspace' && (
+          <button
+            onClick={onToggleMobileSidebar}
+            className="md:hidden p-1.5 rounded hover:bg-dark-850 text-slate-400 hover:text-slate-100"
+            title="Toggle Mobile Drawer"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+        )}
 
-        {/* Desktop Sidebar Toggle Button */}
+        {/* Desktop Sidebar Toggle Button (always visible on desktop in workspace mode, even when collapsed) */}
         {viewMode === 'workspace' && (
           <button
             onClick={onToggleSidebarCollapse}
             className="hidden md:flex p-1.5 rounded-lg hover:bg-dark-850 text-slate-400 hover:text-slate-100 transition-colors border border-transparent hover:border-dark-800"
             title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
-            {isSidebarCollapsed ? <PanelLeftOpen className="w-4.5 h-4.5 text-brand-accent" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
+            {isSidebarCollapsed ? <PanelLeftOpen className="w-5 h-5 text-brand-accent" /> : <PanelLeftClose className="w-5 h-5" />}
           </button>
         )}
 
