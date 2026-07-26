@@ -65,16 +65,14 @@ export default function Header({
           <Menu className="w-5 h-5" />
         </button>
 
-        {/* Desktop Sidebar Toggle Button */}
-        {viewMode === 'workspace' && (
-          <button
-            onClick={onToggleSidebarCollapse}
-            className="hidden md:flex p-1.5 rounded-lg hover:bg-dark-850 text-slate-400 hover:text-slate-100 transition-colors border border-transparent hover:border-dark-800"
-            title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-          >
-            {isSidebarCollapsed ? <PanelLeftOpen className="w-4.5 h-4.5 text-brand-accent" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
-          </button>
-        )}
+        {/* Desktop Sidebar Toggle Button (always visible on desktop so the sidebar can be re-expanded) */}
+        <button
+          onClick={onToggleSidebarCollapse}
+          className="hidden md:flex p-1.5 rounded-lg hover:bg-dark-850 text-slate-400 hover:text-slate-100 transition-colors border border-transparent hover:border-dark-800"
+          title={isSidebarCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+        >
+          {isSidebarCollapsed ? <PanelLeftOpen className="w-5 h-5 text-brand-accent" /> : <PanelLeftClose className="w-5 h-5" />}
+        </button>
 
         {/* Brand Logo & Title */}
         <div className="flex items-center space-x-2.5">
