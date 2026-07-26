@@ -77,7 +77,10 @@ html.light .bg-dark-950 {
   background-color: #f8fafc !important;
 }
 
-html.light .bg-dark-950\/40 {
+html.light .bg-dark-950\/40,
+html.light .bg-dark-950\/60,
+html.light .bg-dark-950\/70,
+html.light .bg-dark-950\/80 {
   background-color: #ffffff !important;
   border-color: #cbd5e1 !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05);
@@ -176,6 +179,19 @@ html.light .bg-emerald-500\/10 {
 }
 html.light .text-emerald-400 {
   color: #047857 !important;
+}
+
+/* Rose / Red elements in Light Mode (Log Out button) */
+html.light .bg-rose-500\/15,
+html.light .bg-rose-500\/20 {
+  background-color: #ffe4e6 !important;
+}
+html.light .text-rose-300,
+html.light .text-rose-400 {
+  color: #e11d48 !important;
+}
+html.light .border-rose-500\/30 {
+  border-color: #fecdd3 !important;
 }
 
 /* Light Theme Input / Textarea visibility */

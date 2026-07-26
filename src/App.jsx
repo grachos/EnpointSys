@@ -104,9 +104,12 @@ export default function App() {
   const requireAuthThen = (actionCallback) => {
     const token = getAuthToken();
     const savedUser = getStoredUser();
-    const isSessionActive = Boolean(currentUser || (token && savedUser));
+    // Enforce active token and user in localStorage (prevents stale React state after cross-tab logout)
+    const isSessionActive = Boolean(token && savedUser);
 
     if (!isSessionActive) {
+      setAuthToken(null);
+      setCurrentUser(null);
       setPendingAuthAction(() => actionCallback);
       setIsLoginModalOpen(true);
     } else {
@@ -147,6 +150,26 @@ export default function App() {
     setAuthSession(getAuthToken(), updated);
     setIsChangePasswordOpen(false);
   };
+
+  // Synchronise authentication state across multiple browser tabs
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'endpointsys_jwt_token' || e.key === 'endpointsys_user' || !e.key) {
+        const token = getAuthToken();
+        const user = getStoredUser();
+        if (!token || !user) {
+          setAuthToken(null);
+          setCurrentUser(null);
+          setMustChangePassword(false);
+        } else {
+          setAuthToken(token);
+          setCurrentUser(user);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Register a global 401 handler so any expired/invalid token clears the session.
   useEffect(() => {
