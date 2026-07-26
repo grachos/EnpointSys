@@ -708,54 +708,45 @@ export default function App() {
         />
       )}
 
-      {/* Main Workspace vs Documentation Reader */}
-      {viewMode === 'docs' ? (
-        <Suspense fallback={null}>
-        <DocumentationViewer
-          collection={activeDocCollection}
-          onRunRequestInWorkspace={(req) => {
-            requireAuthThen(() => {
-              setIsStandalonePublic(false);
-              setViewMode('workspace');
-              handleNewTab(req);
-            });
-          }}
-          onImportCollectionToWorkspace={(importedCol) => {
-            requireAuthThen(() => {
-              setIsStandalonePublic(false);
-              setViewMode('workspace');
-              handleImportCollection(importedCol);
-            });
-          }}
-          onOpenWorkspaceApp={() => {
-            requireAuthThen(() => {
-              setIsStandalonePublic(false);
-              setViewMode('workspace');
-            });
-          }}
-          isStandalonePublic={isStandalonePublic}
-        />
-        </Suspense>
-      ) : (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Left Sidebar (Desktop pane hides when collapsed; mobile drawer always available) */}
+      {/* Main Container */}
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Left Sidebar (Desktop pane hides when collapsed or in docs mode; mobile drawer always available when triggered) */}
+        {!isStandalonePublic && (
           <Sidebar
             collections={collections}
             activeRequestId={activeRequest?.id}
-            onSelectRequest={handleSelectRequestFromTree}
+            onSelectRequest={(col, req) => {
+              if (viewMode === 'docs') {
+                requireAuthThen(() => {
+                  setViewMode('workspace');
+                  handleSelectRequestFromTree(col, req);
+                });
+              } else {
+                handleSelectRequestFromTree(col, req);
+              }
+            }}
             onCreateCollection={handleCreateCollection}
             onCreateFolder={handleCreateFolder}
             onCreateRequest={handleCreateRequest}
             onDeleteNode={handleDeleteNode}
             onReorderCollections={setCollections}
             history={history}
-            onSelectHistoryItem={handleSelectHistoryItem}
+            onSelectHistoryItem={(item) => {
+              if (viewMode === 'docs') {
+                requireAuthThen(() => {
+                  setViewMode('workspace');
+                  handleSelectHistoryItem(item);
+                });
+              } else {
+                handleSelectHistoryItem(item);
+              }
+            }}
             environments={environments}
             activeEnvId={activeEnvId}
             onSelectEnvironment={setActiveEnvId}
             onOpenEnvModal={() => setIsEnvModalOpen(true)}
             lang={lang}
-            isCollapsed={isSidebarCollapsed}
+            isCollapsed={viewMode === 'docs' ? true : isSidebarCollapsed}
             isMobileOpen={isMobileSidebarOpen}
             onCloseMobile={() => setIsMobileSidebarOpen(false)}
             onToggleSidebarCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
@@ -765,8 +756,37 @@ export default function App() {
             onOpenLoginModal={() => setIsLoginModalOpen(true)}
             onLogout={handleLogout}
           />
+        )}
 
-          {/* Center Main Work Area */}
+        {/* Main Workspace vs Documentation Reader */}
+        {viewMode === 'docs' ? (
+          <Suspense fallback={null}>
+            <DocumentationViewer
+              collection={activeDocCollection}
+              onRunRequestInWorkspace={(req) => {
+                requireAuthThen(() => {
+                  setIsStandalonePublic(false);
+                  setViewMode('workspace');
+                  handleNewTab(req);
+                });
+              }}
+              onImportCollectionToWorkspace={(importedCol) => {
+                requireAuthThen(() => {
+                  setIsStandalonePublic(false);
+                  setViewMode('workspace');
+                  handleImportCollection(importedCol);
+                });
+              }}
+              onOpenWorkspaceApp={() => {
+                requireAuthThen(() => {
+                  setIsStandalonePublic(false);
+                  setViewMode('workspace');
+                });
+              }}
+              isStandalonePublic={isStandalonePublic}
+            />
+          </Suspense>
+        ) : (
           <main className="flex-1 flex flex-col overflow-hidden bg-dark-950">
             {/* Open Tabs Manager */}
             <TabManager
@@ -884,8 +904,8 @@ export default function App() {
               )}
             </div>
           </main>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* MODALS (lazy-loaded & only mounted when opened) */}
       <Suspense fallback={null}>

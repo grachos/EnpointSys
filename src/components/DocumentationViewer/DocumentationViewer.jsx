@@ -18,7 +18,9 @@ import {
   Sparkles,
   ChevronDown,
   ChevronUp,
-  Menu
+  Menu,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { generateCodeSnippet } from '../../services/snippetGenerator';
 
@@ -33,6 +35,7 @@ export default function DocumentationViewer({
   const [searchQuery, setSearchQuery] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [isNavCollapsed, setIsNavCollapsed] = useState(false);
   const [isMobileEndpointsOpen, setIsMobileEndpointsOpen] = useState(false);
 
   if (!collection) {
@@ -266,40 +269,76 @@ export default function DocumentationViewer({
           </div>
         )}
 
-        {/* Desktop Navigation Table of Contents Sidebar (hidden on mobile, visible md+) */}
-        <div className="hidden md:block w-64 bg-dark-900 border-r border-dark-800 p-4 space-y-4 overflow-y-auto flex-shrink-0">
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-500" />
-            <input
-              type="text"
-              placeholder="Search endpoints..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-dark-950 border border-dark-800 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono mb-2">
-              Endpoints ({filteredRequests.length})
+        {/* Desktop Navigation Table of Contents Sidebar (Expanded vs Collapsed) */}
+        {!isNavCollapsed ? (
+          <div className="hidden md:block w-64 bg-dark-900 border-r border-dark-800 p-4 space-y-4 overflow-y-auto flex-shrink-0 transition-all duration-300 select-none">
+            <div className="flex items-center justify-between">
+              <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider font-mono">
+                Endpoints ({filteredRequests.length})
+              </div>
+              <button
+                onClick={() => setIsNavCollapsed(true)}
+                className="p-1 text-slate-400 hover:text-slate-100 hover:bg-dark-850 rounded transition-colors"
+                title="Collapse Sidebar"
+              >
+                <PanelLeftClose className="w-4 h-4" />
+              </button>
             </div>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-500" />
+              <input
+                type="text"
+                placeholder="Search endpoints..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-dark-950 border border-dark-800 rounded-md pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500"
+              />
+            </div>
+
+            <div className="space-y-1">
+              {filteredRequests.map((req) => (
+                <a
+                  key={req.id}
+                  href={`#doc-item-${req.id}`}
+                  className="flex items-center justify-between p-2 rounded hover:bg-dark-850 text-xs transition-colors group"
+                >
+                  <div className="flex items-center space-x-2 min-w-0">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border ${getMethodColor(req.method)}`}>
+                      {req.method}
+                    </span>
+                    <span className="truncate text-slate-300 group-hover:text-white">{req.name}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="hidden md:flex flex-col items-center w-14 bg-dark-900 border-r border-dark-800 py-4 px-2 space-y-3 overflow-y-auto flex-shrink-0 transition-all duration-300 select-none">
+            <button
+              onClick={() => setIsNavCollapsed(false)}
+              className="p-1.5 text-slate-400 hover:text-brand-accent hover:bg-dark-850 rounded transition-colors"
+              title="Expand Endpoints Sidebar"
+            >
+              <PanelLeftOpen className="w-5 h-5 text-brand-accent" />
+            </button>
+
+            <div className="w-full h-px bg-dark-800 my-1" />
 
             {filteredRequests.map((req) => (
               <a
                 key={req.id}
                 href={`#doc-item-${req.id}`}
-                className="flex items-center justify-between p-2 rounded hover:bg-dark-850 text-xs transition-colors group"
+                title={`${req.method} ${req.name}`}
+                className="p-1.5 rounded hover:bg-dark-850 transition-colors flex items-center justify-center group"
               >
-                <div className="flex items-center space-x-2 min-w-0">
-                  <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border ${getMethodColor(req.method)}`}>
-                    {req.method}
-                  </span>
-                  <span className="truncate text-slate-300 group-hover:text-white">{req.name}</span>
-                </div>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded font-mono border ${getMethodColor(req.method)}`}>
+                  {req.method}
+                </span>
               </a>
             ))}
           </div>
-        </div>
+        )}
 
         {/* Documentation Items Stream */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-6 sm:space-y-10 min-w-0">
