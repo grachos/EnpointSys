@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Theme Variables */
+  :root,
+  html.light {
+    --bg-main: #f8fafc;
+    --bg-card: #ffffff;
+    --bg-subtle: #f1f5f9;
+    --bg-hover: #e2e8f0;
+    --border-color: #cbd5e1;
+    --border-subtle: #e2e8f0;
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --input-bg: #ffffff;
+    --tab-active-bg: #e0f2fe;
+    --tab-active-text: #0284c7;
+    --tab-inactive-text: #475569;
+  }
+
+  html.dark {
+    --bg-main: #090b10;
+    --bg-card: #0f131c;
+    --bg-subtle: #151b27;
+    --bg-hover: #1e2638;
+    --border-color: #273248;
+    --border-subtle: #1e2638;
+    --text-primary: #f8fafc;
+    --text-secondary: #cbd5e1;
+    --text-muted: #64748b;
+    --input-bg: #090b10;
+    --tab-active-bg: rgba(14, 165, 233, 0.15);
+    --tab-active-text: #38bdf8;
+    --tab-inactive-text: #94a3b8;
+  }
+
+  /* Custom scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  html.dark ::-webkit-scrollbar-track {
+    background: #0f131c;
+  }
+
+  html.dark ::-webkit-scrollbar-thumb {
+    background: #273248;
+    border-radius: 3px;
+  }
+
+  html.light ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+
+  html.light ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+  }
+
+  html.dark body {
+    background-color: #090b10;
+    color: #e2e8f0;
+  }
+
+  html.light body {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+}
+
+/* Light Theme overrides for ultra-crisp high contrast visibility */
+html.light .bg-dark-950 {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-dark-950\/40 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+html.light .bg-dark-900 {
+  background-color: #ffffff !important;
+}
+
+html.light .bg-dark-850 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .bg-dark-800 {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .bg-dark-700 {
+  background-color: #cbd5e1 !important;
+}
+
+html.light .border-dark-800 {
+  border-color: #cbd5e1 !important;
+}
+
+html.light .border-dark-700 {
+  border-color: #94a3b8 !important;
+}
+
+html.light .text-slate-100 {
+  color: #0f172a !important;
+}
+
+html.light .text-slate-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-slate-300 {
+  color: #334155 !important;
+}
+
+html.light .text-slate-400 {
+  color: #475569 !important;
+}
+
+html.light .text-slate-500 {
+  color: #64748b !important;
+}
+
+html.light .text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Replace unreadable Celeste Cyan (#00f2fe / #38bdf8) with Deep High-Contrast Cobalt Blue in Light Mode */
+html.light .text-brand-accent {
+  color: #0284c7 !important;
+}
+
+html.light .text-cyan-400,
+html.light .text-cyan-500 {
+  color: #0284c7 !important;
+}
+
+html.light .border-brand-500 {
+  border-color: #0284c7 !important;
+}
+
+html.light .border-brand-500\/30,
+html.light .border-brand-500\/20 {
+  border-color: #7dd3fc !important;
+}
+
+html.light .bg-brand-500\/20,
+html.light .bg-brand-500\/10,
+html.light .bg-brand-500\/15 {
+  background-color: #e0f2fe !important;
+  color: #0284c7 !important;
+}
+
+/* Amber buttons in Light Mode (Publish Docs) */
+html.light .bg-amber-500\/20 {
+  background-color: #fef3c7 !important;
+}
+html.light .text-amber-300,
+html.light .text-amber-400 {
+  color: #b45309 !important;
+}
+html.light .border-amber-500\/30 {
+  border-color: #fcd34d !important;
+}
+
+/* Emerald elements in Light Mode */
+html.light .bg-emerald-500\/20,
+html.light .bg-emerald-500\/10 {
+  background-color: #d1fae5 !important;
+}
+html.light .text-emerald-400 {
+  color: #047857 !important;
+}
+
+/* Light Theme Input / Textarea visibility */
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Light Theme Tab Manager & Sidebar contrast fixes */
+html.light .tab-item-active {
+  background-color: #ffffff !important;
+  color: #0284c7 !important;
+  border-bottom: 2px solid #0284c7 !important;
+}
+
+html.light .tab-item-inactive {
+  background-color: #f1f5f9 !important;
+  color: #475569 !important;
+}
+
+html.light .tab-item-inactive:hover {
+  color: #0f172a !important;
+  background-color: #e2e8f0 !important;
+}
+
+/* Light theme method badge text contrast */
+html.light .method-badge-GET {
+  color: #047857 !important;
+  background-color: #d1fae5 !important;
+  border-color: #6ee7b7 !important;
+}
+
+html.light .method-badge-POST {
+  color: #b45309 !important;
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+}
+
+html.light .method-badge-PUT {
+  color: #1d4ed8 !important;
+  background-color: #dbeafe !important;
+  border-color: #93c5fd !important;
+}
+
+html.light .method-badge-DELETE {
+  color: #b91c1c !important;
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+
+html.light .method-badge-PATCH {
+  color: #6d28d9 !important;
+  background-color: #ede9fe !important;
+  border-color: #c4b5fd !important;
+}
+
+@keyframes pulse-subtle {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

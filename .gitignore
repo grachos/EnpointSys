@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Secrets / local config (NEVER commit)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+backend.log
+frontend.log
+srv.log
+srv.out
+srv.err
+out.log
+err.log
+boot.out
+boot.err
+
+# Scratch / temp
+scratch/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
