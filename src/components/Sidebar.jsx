@@ -12,7 +12,6 @@ import {
   FolderPlus, 
   X,
   PanelLeftClose,
-  PanelLeftOpen,
   Lock,
   Eye,
   EyeOff,
@@ -44,7 +43,6 @@ export default function Sidebar({
   onSelectEnvironment,
   onOpenEnvModal,
   lang = 'es',
-  isCollapsed = false,
   isMobileOpen,
   onCloseMobile,
   onToggleSidebarCollapse,
@@ -267,14 +265,14 @@ export default function Sidebar({
           </button>
         </div>
 
-        {/* Sidebar Collapse/Expand Button */}
+        {/* Sidebar Collapse Button */}
         {onToggleSidebarCollapse && (
           <button
             onClick={onToggleSidebarCollapse}
             className="hidden md:block p-1 text-slate-400 hover:text-slate-100 hover:bg-dark-850 rounded ml-1"
-            title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+            title="Collapse Sidebar"
           >
-            {isCollapsed ? <PanelLeftOpen className="w-4 h-4 text-brand-accent" /> : <PanelLeftClose className="w-4 h-4" />}
+            <PanelLeftClose className="w-4 h-4" />
           </button>
         )}
 
@@ -679,12 +677,10 @@ export default function Sidebar({
 
   return (
     <>
-      {/* Desktop Sidebar (hidden when collapsed, but component stays mounted for mobile drawer) */}
-      {!isCollapsed && (
-        <div className="hidden md:block h-full">
-          {sidebarContent}
-        </div>
-      )}
+      {/* Desktop Sidebar */}
+      <div className="hidden md:block h-full">
+        {sidebarContent}
+      </div>
 
       {/* Mobile Drawer Overlay */}
       {isMobileOpen && (
