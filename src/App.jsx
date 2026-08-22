@@ -217,21 +217,15 @@ export default function App() {
           // invalid token -> fall through to normal auth-gated flow
         }
 
-        if (!getAuthToken()) {
-          setCollections(DEFAULT_COLLECTIONS);
-          setEnvironments(DEFAULT_ENVIRONMENTS);
-          setActiveEnvId(DEFAULT_ENVIRONMENTS[0]?.id);
-          setIsDbLoaded(true);
-          return;
-        }
-
-        // Refresh user flags (e.g. mustChangePassword) from the server.
-        const me = await fetchCurrentUser().catch(() => null);
-        if (me) {
-          setCurrentUser(me);
-          setAuthSession(getAuthToken(), me);
-          setMustChangePassword(!!me.mustChangePassword);
-          if (me.mustChangePassword) setIsChangePasswordOpen(true);
+        if (getAuthToken()) {
+          // Refresh user flags (e.g. mustChangePassword) from the server.
+          const me = await fetchCurrentUser().catch(() => null);
+          if (me) {
+            setCurrentUser(me);
+            setAuthSession(getAuthToken(), me);
+            setMustChangePassword(!!me.mustChangePassword);
+            if (me.mustChangePassword) setIsChangePasswordOpen(true);
+          }
         }
 
         const ok = await checkMySQLHealth();
@@ -523,95 +517,130 @@ export default function App() {
   };
 
   const handleCreateCollection = () => {
-    const name = prompt('Enter new Collection name:', 'New Collection');
-    if (!name) return;
+    const name = prompt(lang === 'es' ? 'Ingrese el nombre de la nueva colección:' : 'Enter new Collection name:', 'New Collection');
+    if (!name || !name.trim()) return;
     const newCol = {
       id: 'col-' + Date.now(),
-      name,
+      name: name.trim(),
       description: '',
       items: []
     };
-    setCollections(prev => [...prev, newCol]);
+    setCollections(prev => {
+      const updated = [...prev, newCol];
+      if (isDbLoaded && !isStandalonePublic) {
+        saveCollectionsDB(updated);
+      }
+      return updated;
+    });
+    showToast(lang === 'es' ? 'Colección creada correctamente' : 'Collection created successfully');
   };
 
   const handleCreateFolder = (collectionId) => {
-    const name = prompt('Enter new Folder name:', 'New Folder');
-    if (!name) return;
+    const name = prompt(lang === 'es' ? 'Ingrese el nombre de la carpeta:' : 'Enter new Folder name:', 'New Folder');
+    if (!name || !name.trim()) return;
 
-    setCollections(prev => prev.map(col => {
-      if (col.id === collectionId) {
-        return {
-          ...col,
-          items: [
-            ...col.items,
-            { id: 'folder-' + Date.now(), name, isFolder: true, items: [] }
-          ]
-        };
+    setCollections(prev => {
+      const updated = prev.map(col => {
+        if (col.id === collectionId) {
+          return {
+            ...col,
+            items: [
+              ...(col.items || []),
+              { id: 'folder-' + Date.now(), name: name.trim(), isFolder: true, items: [] }
+            ]
+          };
+        }
+        return col;
+      });
+      if (isDbLoaded && !isStandalonePublic) {
+        saveCollectionsDB(updated);
       }
-      return col;
-    }));
+      return updated;
+    });
+    showToast(lang === 'es' ? 'Carpeta creada correctamente' : 'Folder created successfully');
   };
 
   const handleCreateRequest = (collectionId, folderId = null) => {
-    const name = prompt('Enter Request name:', 'New Request');
-    if (!name) return;
+    const name = prompt(lang === 'es' ? 'Ingrese el nombre de la solicitud:' : 'Enter Request name:', 'New Request');
+    if (!name || !name.trim()) return;
 
     const newReq = {
       ...INITIAL_REQUEST,
       id: 'req-' + Date.now(),
-      name,
+      name: name.trim(),
       url: '{{baseUrl}}/posts'
     };
 
-    setCollections(prev => prev.map(col => {
-      if (col.id === collectionId) {
-        if (!folderId) {
-          return { ...col, items: [...col.items, newReq] };
-        } else {
-          const updateFolder = (items) => {
-            return items.map(item => {
-              if (item.id === folderId && item.isFolder) {
-                return { ...item, items: [...item.items, newReq] };
-              }
-              if (item.isFolder && item.items) {
-                return { ...item, items: updateFolder(item.items) };
-              }
-              return item;
-            });
-          };
-          return { ...col, items: updateFolder(col.items) };
-        }
-      }
-      return col;
-    }));
-
-    handleNewTab(newReq);
-  };
-
-  const handleDeleteNode = (collectionId, nodeId) => {
-    if (!confirm('Are you sure you want to delete this item?')) return;
-
     setCollections(prev => {
-      if (collectionId === nodeId) {
-        return prev.filter(c => c.id !== collectionId);
-      }
-
-      return prev.map(col => {
+      const updated = prev.map(col => {
         if (col.id === collectionId) {
-          const filterItems = (items) => {
-            return items.filter(item => {
-              if (item.id === nodeId) return false;
-              if (item.isFolder && item.items) {
-                item.items = filterItems(item.items);
-              }
-              return true;
-            });
-          };
-          return { ...col, items: filterItems(col.items) };
+          if (!folderId) {
+            return { ...col, items: [...(col.items || []), newReq] };
+          } else {
+            const updateFolder = (items) => {
+              return items.map(item => {
+                if (item.id === folderId && item.isFolder) {
+                  return { ...item, items: [...(item.items || []), newReq] };
+                }
+                if (item.isFolder && item.items) {
+                  return { ...item, items: updateFolder(item.items) };
+                }
+                return item;
+              });
+            };
+            return { ...col, items: updateFolder(col.items || []) };
+          }
         }
         return col;
       });
+      if (isDbLoaded && !isStandalonePublic) {
+        saveCollectionsDB(updated);
+      }
+      return updated;
     });
+
+    handleNewTab(newReq);
+    showToast(lang === 'es' ? 'Solicitud creada correctamente' : 'Request created successfully');
+  };
+
+  const handleDeleteNode = (collectionId, nodeId) => {
+    const confirmed = confirm(lang === 'es' ? '¿Está seguro de que desea eliminar este elemento?' : 'Are you sure you want to delete this item?');
+    if (!confirmed) return;
+
+    setCollections(prev => {
+      let updated;
+      if (collectionId === nodeId) {
+        updated = prev.filter(c => c.id !== collectionId);
+      } else {
+        updated = prev.map(col => {
+          if (col.id === collectionId) {
+            const filterItems = (items) => {
+              return items.filter(item => {
+                if (item.id === nodeId) return false;
+                if (item.isFolder && item.items) {
+                  item.items = filterItems(item.items);
+                }
+                return true;
+              });
+            };
+            return { ...col, items: filterItems(col.items || []) };
+          }
+          return col;
+        });
+      }
+      if (isDbLoaded && !isStandalonePublic) {
+        saveCollectionsDB(updated);
+      }
+      return updated;
+    });
+    showToast(lang === 'es' ? 'Elemento eliminado' : 'Item deleted');
+  };
+
+  const handleReorderCollections = (newCollections) => {
+    setCollections(newCollections);
+    if (isDbLoaded && !isStandalonePublic) {
+      saveCollectionsDB(newCollections);
+    }
   };
 
   const handleRenameCollection = (collectionId, newName) => {
@@ -854,7 +883,7 @@ export default function App() {
             onDeleteNode={handleDeleteNode}
             onRenameCollection={handleRenameCollection}
             onRenameNode={handleRenameNode}
-            onReorderCollections={setCollections}
+            onReorderCollections={handleReorderCollections}
             history={history}
             onSelectHistoryItem={(item) => {
               if (viewMode === 'docs') {

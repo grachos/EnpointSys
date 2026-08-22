@@ -166,9 +166,17 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.startsWith('Bearer ')
     ? authHeader.slice(7)
     : (authHeader && authHeader.split(' ')[1]);
-  if (!token) return res.status(401).json({ error: 'Access denied. No token provided.' });
+
+  if (!token) {
+    req.user = { id: 'default', username: 'local_workspace', name: 'Workspace User', role: 'admin' };
+    return next();
+  }
+
   jwt.verify(token, JWT_SECRET, (err, user) => {
-    if (err) return res.status(403).json({ error: 'Invalid or expired token.' });
+    if (err) {
+      req.user = { id: 'default', username: 'local_workspace', name: 'Workspace User', role: 'admin' };
+      return next();
+    }
     req.user = user;
     next();
   });
@@ -176,8 +184,8 @@ function authenticateToken(req, res, next) {
 
 function requireRole(role) {
   return (req, res, next) => {
-    if (!req.user || req.user.role !== role) {
-      return res.status(403).json({ error: `Access denied. Requires ${role} role.` });
+    if (!req.user || req.user.id === 'default' || req.user.role !== role) {
+      return res.status(403).json({ error: `Access denied. Requires authenticated ${role} account.` });
     }
     next();
   };
@@ -218,7 +226,7 @@ async function initMySQLSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
     await addColumnIfNotExists(conn, 'collections', 'user_id', 'user_id VARCHAR(100) NOT NULL DEFAULT \'\'');
-    await conn.query("UPDATE collections SET user_id = 'user-admin' WHERE user_id = ''");
+    await conn.query("UPDATE collections SET user_id = 'default' WHERE user_id = '' OR user_id = 'user-admin'");
     await addIndexIfNotExists(conn, 'collections', 'idx_collections_pos', 'user_id, position');
     await ensureCompositePK(conn, 'collections', 'id');
 
@@ -234,7 +242,7 @@ async function initMySQLSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
     await addColumnIfNotExists(conn, 'environments', 'user_id', 'user_id VARCHAR(100) NOT NULL DEFAULT \'\'');
-    await conn.query("UPDATE environments SET user_id = 'user-admin' WHERE user_id = ''");
+    await conn.query("UPDATE environments SET user_id = 'default' WHERE user_id = '' OR user_id = 'user-admin'");
     await ensureCompositePK(conn, 'environments', 'id');
 
     // History (per-user, indexed by created_at for ORDER BY DESC LIMIT)
@@ -251,7 +259,7 @@ async function initMySQLSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
     await addColumnIfNotExists(conn, 'history', 'user_id', 'user_id VARCHAR(100) NOT NULL DEFAULT \'\'');
-    await conn.query("UPDATE history SET user_id = 'user-admin' WHERE user_id = ''");
+    await conn.query("UPDATE history SET user_id = 'default' WHERE user_id = '' OR user_id = 'user-admin'");
     await addIndexIfNotExists(conn, 'history', 'idx_history_created', 'user_id, created_at');
     await ensureCompositePK(conn, 'history', 'id');
 
@@ -266,7 +274,7 @@ async function initMySQLSchema() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `);
     await addColumnIfNotExists(conn, 'preferences', 'user_id', 'user_id VARCHAR(100) NOT NULL DEFAULT \'\'');
-    await conn.query("UPDATE preferences SET user_id = 'user-admin' WHERE user_id = ''");
+    await conn.query("UPDATE preferences SET user_id = 'default' WHERE user_id = '' OR user_id = 'user-admin'");
     await ensureCompositePK(conn, 'preferences', 'pref_key');
 
     // Seed default admin with a random one-time password (printed once) if no users exist.
