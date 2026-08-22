@@ -10,6 +10,7 @@ import { translations } from '../../i18n/translations';
 
 export default function RequestBuilder({
   request,
+  isDirty = false,
   onChange,
   onSend,
   onSave,
@@ -61,7 +62,14 @@ export default function RequestBuilder({
               onClick={() => setIsEditingName(true)}
               className="flex items-center space-x-1.5 cursor-pointer hover:bg-dark-850 px-2 py-0.5 rounded transition-colors group"
             >
-              <h2 className="text-xs font-bold text-slate-200">{request.name}</h2>
+              <h2 className="text-xs font-bold text-slate-200 flex items-center">
+                <span>{request.name}</span>
+                {isDirty && (
+                  <span className="text-amber-400 font-bold ml-1 text-sm leading-none" title="Unsaved changes">
+                    *
+                  </span>
+                )}
+              </h2>
               <Edit2 className="w-3 h-3 text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           )}
@@ -70,9 +78,14 @@ export default function RequestBuilder({
         {/* Action Save Button */}
         <button
           onClick={onSave}
-          className="flex items-center space-x-1 px-3 py-1 bg-dark-850 hover:bg-dark-800 border border-dark-700 text-xs text-slate-300 hover:text-white rounded font-medium transition-all"
+          className={`flex items-center space-x-1.5 px-3 py-1 border text-xs rounded font-medium transition-all ${
+            isDirty
+              ? 'bg-brand-500/20 hover:bg-brand-500/30 border-brand-500/50 text-brand-300 hover:text-white shadow-sm ring-1 ring-brand-500/30'
+              : 'bg-dark-850 hover:bg-dark-800 border-dark-700 text-slate-300 hover:text-white'
+          }`}
+          title={isDirty ? 'Save changes (Ctrl+S)' : 'Saved'}
         >
-          <Save className="w-3.5 h-3.5 text-brand-accent" />
+          <Save className={`w-3.5 h-3.5 ${isDirty ? 'text-brand-400' : 'text-brand-accent'}`} />
           <span>{t.save}</span>
         </button>
       </div>

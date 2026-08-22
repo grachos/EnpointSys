@@ -33,7 +33,7 @@ import {
   getPublicDoc
 } from './services/dbService';
 import { setUnauthorizedHandler, clearAuthSession, getAuthToken, getStoredUser, setAuthSession } from './services/api';
-import { GripHorizontal, GripVertical, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Maximize2 } from 'lucide-react';
+import { GripHorizontal, GripVertical, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Maximize2, CheckCircle2 } from 'lucide-react';
 
 export default function App() {
   // DB Loaded state
@@ -83,9 +83,19 @@ export default function App() {
   const [isStandalonePublic, setIsStandalonePublic] = useState(isPublicDocUrl);
 
   const [tabs, setTabs] = useState([
-    { id: 'tab-1', request: { ...INITIAL_REQUEST } }
+    { id: 'tab-1', request: { ...INITIAL_REQUEST }, isDirty: false }
   ]);
   const [activeTabId, setActiveTabId] = useState('tab-1');
+  const [toast, setToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
+
+  const showToast = (message, type = 'success') => {
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    setToast({ message, type });
+    toastTimeoutRef.current = setTimeout(() => {
+      setToast(null);
+    }, 2800);
+  };
 
   // Response & Execution State per Tab
   const [responses, setResponses] = useState({});
@@ -256,7 +266,7 @@ export default function App() {
         applyTheme(storedTheme || 'dark');
         setSplitMode(storedSplit || 'vertical');
         if (storedTabs && storedTabs.length > 0) {
-          setTabs(storedTabs);
+          setTabs(storedTabs.map(t => ({ ...t, isDirty: false })));
           setActiveTabId(storedTabs[0].id);
         }
 
@@ -412,39 +422,86 @@ export default function App() {
   const handleNewTab = (req = null) => {
     const newTabId = 'tab-' + Date.now();
     const newReq = req ? JSON.parse(JSON.stringify(req)) : { ...INITIAL_REQUEST, id: 'req-' + Date.now() };
-    setTabs(prev => [...prev, { id: newTabId, request: newReq }]);
+    setTabs(prev => [...prev, { id: newTabId, request: newReq, isDirty: false }]);
     setActiveTabId(newTabId);
     setIsStandalonePublic(false);
     setViewMode('workspace');
   };
 
-  // LIVE REQUEST UPDATE & COLLECTION METHOD SYNC FIX
+  // LIVE REQUEST UPDATE (marks active tab as dirty/modified with asterisk)
   const handleUpdateRequest = (updatedRequest) => {
-    // 1. Update Tab state
-    setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, request: updatedRequest } : t));
-
-    // 2. Sync changes back to collections hierarchy so sidebar method badge updates live!
-    if (updatedRequest.id) {
-      setCollections(prevCollections => {
-        const updateItemsRecursively = (items) => {
-          return items.map(item => {
-            if (item.id === updatedRequest.id) {
-              return { ...item, ...updatedRequest };
-            }
-            if (item.isFolder && item.items) {
-              return { ...item, items: updateItemsRecursively(item.items) };
-            }
-            return item;
-          });
-        };
-
-        return prevCollections.map(col => ({
-          ...col,
-          items: updateItemsRecursively(col.items || [])
-        }));
-      });
-    }
+    // Update active tab state and flag as dirty
+    setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, request: updatedRequest, isDirty: true } : t));
   };
+
+  // SAVE REQUEST (persists request to collections & DB, clears asterisk)
+  const handleSaveRequest = () => {
+    if (!activeRequest) return;
+
+    let found = false;
+    const updateItemsRecursively = (items) => {
+      return items.map(item => {
+        if (item.id === activeRequest.id) {
+          found = true;
+          return { ...item, ...activeRequest };
+        }
+        if (item.isFolder && item.items) {
+          return { ...item, items: updateItemsRecursively(item.items) };
+        }
+        return item;
+      });
+    };
+
+    let updatedCollections = collections.map(col => ({
+      ...col,
+      items: updateItemsRecursively(col.items || [])
+    }));
+
+    // If request does not exist in any collection yet, add to first collection or create one
+    if (!found) {
+      if (updatedCollections.length > 0) {
+        updatedCollections = updatedCollections.map((col, idx) => {
+          if (idx === 0) {
+            return {
+              ...col,
+              items: [...(col.items || []), { ...activeRequest }]
+            };
+          }
+          return col;
+        });
+      } else {
+        const newCol = {
+          id: 'col-' + Date.now(),
+          name: 'My Collection',
+          description: '',
+          items: [{ ...activeRequest }]
+        };
+        updatedCollections = [newCol];
+      }
+    }
+
+    setCollections(updatedCollections);
+    if (isDbLoaded && !isStandalonePublic) {
+      saveCollectionsDB(updatedCollections);
+    }
+
+    // Mark current active tab (and any tab with this request) as clean (asterisk disappears!)
+    setTabs(prev => prev.map(t => (t.id === activeTabId || t.request?.id === activeRequest.id) ? { ...t, isDirty: false } : t));
+
+    showToast(lang === 'es' ? 'Solicitud guardada correctamente' : 'Request saved successfully');
+  };
+
+  // Keyboard shortcut Ctrl+S / Cmd+S to save active request
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        handleSaveRequest();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeRequest, activeTabId, collections, isDbLoaded, isStandalonePublic, lang]);
 
   // Switch from Public Portal Doc to Main Testing Workspace
   const handleTransitionToWorkspaceApp = () => {
@@ -555,6 +612,72 @@ export default function App() {
         return col;
       });
     });
+  };
+
+  const handleRenameCollection = (collectionId, newName) => {
+    if (!newName || !newName.trim()) return;
+    const trimmedName = newName.trim();
+
+    setCollections(prev => {
+      const updated = prev.map(col => {
+        if (col.id === collectionId) {
+          return { ...col, name: trimmedName };
+        }
+        return col;
+      });
+      if (isDbLoaded && !isStandalonePublic) {
+        saveCollectionsDB(updated);
+      }
+      return updated;
+    });
+
+    showToast(lang === 'es' ? 'Colección renombrada correctamente' : 'Collection renamed successfully');
+  };
+
+  const handleRenameNode = (collectionId, nodeId, newName) => {
+    if (!newName || !newName.trim()) return;
+    const trimmedName = newName.trim();
+
+    if (collectionId === nodeId) {
+      handleRenameCollection(collectionId, trimmedName);
+      return;
+    }
+
+    setCollections(prev => {
+      const updateNameRecursively = (items) => {
+        return items.map(item => {
+          if (item.id === nodeId) {
+            return { ...item, name: trimmedName };
+          }
+          if (item.isFolder && item.items) {
+            return { ...item, items: updateNameRecursively(item.items) };
+          }
+          return item;
+        });
+      };
+
+      const updated = prev.map(col => {
+        if (col.id === collectionId) {
+          return { ...col, items: updateNameRecursively(col.items || []) };
+        }
+        return col;
+      });
+
+      if (isDbLoaded && !isStandalonePublic) {
+        saveCollectionsDB(updated);
+      }
+      return updated;
+    });
+
+    // Also update any open tab with this request's name
+    setTabs(prev => prev.map(t => {
+      if (t.request?.id === nodeId) {
+        return { ...t, request: { ...t.request, name: trimmedName } };
+      }
+      return t;
+    }));
+
+    showToast(lang === 'es' ? 'Elemento renombrado correctamente' : 'Item renamed successfully');
   };
 
   const handleTogglePublishCollection = (colId, publishData) => {
@@ -729,6 +852,8 @@ export default function App() {
             onCreateFolder={handleCreateFolder}
             onCreateRequest={handleCreateRequest}
             onDeleteNode={handleDeleteNode}
+            onRenameCollection={handleRenameCollection}
+            onRenameNode={handleRenameNode}
             onReorderCollections={setCollections}
             history={history}
             onSelectHistoryItem={(item) => {
@@ -812,9 +937,10 @@ export default function App() {
                 >
                   <RequestBuilder
                     request={activeRequest}
+                    isDirty={!!activeTab?.isDirty}
                     onChange={handleUpdateRequest}
                     onSend={handleSendRequest}
-                    onSave={() => alert('Request configuration saved permanently to XAMPP MySQL database!')}
+                    onSave={handleSaveRequest}
                     isLoading={isLoading}
                     activeEnvironment={activeEnvironment}
                     lang={lang}
@@ -967,6 +1093,14 @@ export default function App() {
             username={currentUser?.username}
             lang={lang}
           />
+        )}
+
+        {/* Action Notification Toast */}
+        {toast && (
+          <div className="fixed bottom-5 right-5 z-50 flex items-center space-x-2 bg-dark-850 border border-emerald-500/50 text-emerald-300 text-xs px-3.5 py-2.5 rounded-lg shadow-2xl backdrop-blur transition-all">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+            <span className="font-medium">{toast.message}</span>
+          </div>
         )}
       </Suspense>
     </div>

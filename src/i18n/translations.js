@@ -38,6 +38,9 @@ export const translations = {
     moveUp: 'Move Up',
     moveDown: 'Move Down',
     dragToReorder: 'Drag to reorder',
+    renameCollection: 'Rename Collection',
+    renameFolder: 'Rename Folder',
+    renameRequest: 'Rename Request',
 
     // Login & Auth
     staffAccess: 'Staff Access & JWT Authentication',
@@ -217,6 +220,9 @@ export const translations = {
     moveUp: 'Mover Arriba',
     moveDown: 'Mover Abajo',
     dragToReorder: 'Arrastrar para reordenar',
+    renameCollection: 'Renombrar Colección',
+    renameFolder: 'Renombrar Carpeta',
+    renameRequest: 'Renombrar Solicitud',
 
     // Login & Auth
     staffAccess: 'Acceso de Personal y Autenticación JWT',

@@ -24,7 +24,8 @@ import {
   LogOut,
   Key,
   Settings,
-  CheckCircle2
+  CheckCircle2,
+  Edit2
 } from 'lucide-react';
 import { translations } from '../i18n/translations';
 
@@ -36,6 +37,8 @@ export default function Sidebar({
   onCreateFolder,
   onCreateRequest,
   onDeleteNode,
+  onRenameCollection,
+  onRenameNode,
   onReorderCollections,
   history,
   onSelectHistoryItem,
@@ -62,6 +65,28 @@ export default function Sidebar({
   const [sidebarVisibleSecrets, setSidebarVisibleSecrets] = useState({});
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [isEnvSectionExpanded, setIsEnvSectionExpanded] = useState(true);
+  const [editingNode, setEditingNode] = useState(null);
+
+  const startRename = (id, name, type, collectionId = null) => {
+    setEditingNode({ id, name, type, collectionId });
+  };
+
+  const cancelRename = () => {
+    setEditingNode(null);
+  };
+
+  const submitRename = (id) => {
+    if (!editingNode || editingNode.id !== id) return;
+    const trimmed = editingNode.name.trim();
+    if (trimmed) {
+      if (editingNode.type === 'collection' && onRenameCollection) {
+        onRenameCollection(id, trimmed);
+      } else if (onRenameNode && editingNode.collectionId) {
+        onRenameNode(editingNode.collectionId, id, trimmed);
+      }
+    }
+    setEditingNode(null);
+  };
 
   const toggleSidebarSecret = (key) => {
     setSidebarVisibleSecrets(prev => ({
@@ -157,14 +182,46 @@ export default function Sidebar({
                     <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                   )}
                   <Folder className="w-4 h-4 text-amber-400/80 flex-shrink-0" />
-                  <span className="truncate font-medium">{item.name}</span>
+                  {editingNode?.id === item.id ? (
+                    <input
+                      type="text"
+                      value={editingNode.name}
+                      onChange={(e) => setEditingNode(prev => ({ ...prev, name: e.target.value }))}
+                      onBlur={() => submitRename(item.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitRename(item.id);
+                        if (e.key === 'Escape') cancelRename();
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      autoFocus
+                      className="bg-dark-950 border border-brand-500 rounded px-1.5 py-0.5 text-xs text-white font-semibold focus:outline-none w-full max-w-[120px]"
+                    />
+                  ) : (
+                    <span 
+                      className="truncate font-medium flex-1"
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        startRename(item.id, item.name, 'folder', collectionId);
+                      }}
+                      title="Double-click to rename"
+                    >
+                      {item.name}
+                    </span>
+                  )}
                 </div>
 
-                <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-1 transition-opacity">
+                <div className="hidden group-hover:flex items-center space-x-0.5 flex-shrink-0 bg-dark-850/90 pl-1 rounded">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); startRename(item.id, item.name, 'folder', collectionId); }}
+                    className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-brand-accent"
+                    title={t.renameFolder || 'Rename Folder'}
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); onCreateRequest(collectionId, item.id); }}
                     className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-emerald-400"
-                    title="Add Request"
+                    title={t.addRequest}
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -204,20 +261,54 @@ export default function Sidebar({
                 : 'hover:bg-dark-850 text-slate-300'
             }`}
           >
-            <div className="flex items-center space-x-2 min-w-0">
+            <div className="flex items-center space-x-2 min-w-0 flex-1 mr-1">
               <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border font-mono flex-shrink-0 ${getMethodBadgeClass(currentMethod)}`}>
                 {currentMethod}
               </span>
-              <span className="truncate">{item.name}</span>
+              {editingNode?.id === item.id ? (
+                <input
+                  type="text"
+                  value={editingNode.name}
+                  onChange={(e) => setEditingNode(prev => ({ ...prev, name: e.target.value }))}
+                  onBlur={() => submitRename(item.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') submitRename(item.id);
+                    if (e.key === 'Escape') cancelRename();
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                  className="bg-dark-950 border border-brand-500 rounded px-1.5 py-0.5 text-xs text-white font-semibold focus:outline-none w-full"
+                />
+              ) : (
+                <span 
+                  className="truncate flex-1 text-slate-200"
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    startRename(item.id, item.name, 'request', collectionId);
+                  }}
+                  title={item.name}
+                >
+                  {item.name}
+                </span>
+              )}
             </div>
 
-            <button
-              onClick={(e) => { e.stopPropagation(); onDeleteNode(collectionId, item.id); }}
-              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-rose-400 transition-opacity"
-              title="Delete Request"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
+            <div className="hidden group-hover:flex items-center space-x-0.5 flex-shrink-0 bg-dark-850/90 pl-1 rounded">
+              <button
+                onClick={(e) => { e.stopPropagation(); startRename(item.id, item.name, 'request', collectionId); }}
+                className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-brand-accent"
+                title={t.renameRequest || 'Rename Request'}
+              >
+                <Edit2 className="w-3 h-3" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDeleteNode(collectionId, item.id); }}
+                className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-rose-400"
+                title="Delete Request"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         );
       });
@@ -226,7 +317,7 @@ export default function Sidebar({
   const activeEnv = environments.find(e => e.id === activeEnvId);
 
   const sidebarContent = (
-    <aside className="w-72 bg-dark-900 border-r border-dark-800 flex flex-col h-full z-10 flex-shrink-0 select-none">
+    <aside className="w-72 md:w-80 bg-dark-900 border-r border-dark-800 flex flex-col h-full z-10 flex-shrink-0 select-none">
       {/* Sidebar Navigation Tabs */}
       <div className="flex items-center justify-between border-b border-dark-800 px-2 pt-2">
         <div className="flex items-center space-x-0.5 w-full">
@@ -402,10 +493,10 @@ export default function Sidebar({
                   {/* Collapsible Collection Header with Drag Handle & Move Up/Down Controls */}
                   <div 
                     onClick={() => onToggleExpandCollection && onToggleExpandCollection(collection.id)}
-                    className="group flex items-center justify-between py-1 px-1.5 rounded hover:bg-dark-850 cursor-pointer text-slate-200 text-xs font-semibold"
+                    className="group flex items-center justify-between py-1.5 px-2 rounded hover:bg-dark-850 cursor-pointer text-slate-200 text-xs font-semibold transition-colors"
                   >
-                    <div className="flex items-center space-x-1.5 min-w-0">
-                      <div className="text-slate-600 group-hover:text-slate-400 cursor-grab active:cursor-grabbing" title="Drag to reorder collection">
+                    <div className="flex items-center space-x-1.5 min-w-0 flex-1 mr-1">
+                      <div className="text-slate-600 group-hover:text-slate-400 cursor-grab active:cursor-grabbing flex-shrink-0" title={t.dragToReorder || "Drag to reorder collection"}>
                         <GripVertical className="w-3.5 h-3.5" />
                       </div>
                       {isColExpanded ? (
@@ -414,17 +505,42 @@ export default function Sidebar({
                         <ChevronRight className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
                       )}
                       <Layers className="w-4 h-4 text-brand-accent flex-shrink-0" />
-                      <span className="truncate">{collection.name}</span>
+                      {editingNode?.id === collection.id ? (
+                        <input
+                          type="text"
+                          value={editingNode.name}
+                          onChange={(e) => setEditingNode(prev => ({ ...prev, name: e.target.value }))}
+                          onBlur={() => submitRename(collection.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') submitRename(collection.id);
+                            if (e.key === 'Escape') cancelRename();
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          autoFocus
+                          className="bg-dark-950 border border-brand-500 rounded px-1.5 py-0.5 text-xs text-white font-semibold focus:outline-none w-full"
+                        />
+                      ) : (
+                        <span 
+                          className="truncate flex-1 text-slate-200"
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            startRename(collection.id, collection.name, 'collection');
+                          }}
+                          title={collection.name}
+                        >
+                          {collection.name}
+                        </span>
+                      )}
                     </div>
 
-                    <div className="flex items-center space-x-0.5">
-                      {/* Collection Position Controls (Move Up / Down) */}
-                      <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-0.5 transition-opacity mr-1">
+                    {/* Collection Actions (revealed smoothly on hover) */}
+                    <div className="hidden group-hover:flex items-center space-x-0.5 flex-shrink-0 bg-dark-850/90 pl-1 rounded">
+                      <div className="flex items-center space-x-0.5 mr-0.5">
                         <button
                           disabled={index === 0}
                           onClick={(e) => { e.stopPropagation(); handleMoveCollection(index, 'up'); }}
                           className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-white disabled:opacity-30"
-                          title="Move Collection Up"
+                          title={t.moveUp || "Move Collection Up"}
                         >
                           <ArrowUp className="w-3 h-3" />
                         </button>
@@ -432,36 +548,40 @@ export default function Sidebar({
                           disabled={index === collections.length - 1}
                           onClick={(e) => { e.stopPropagation(); handleMoveCollection(index, 'down'); }}
                           className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-white disabled:opacity-30"
-                          title="Move Collection Down"
+                          title={t.moveDown || "Move Collection Down"}
                         >
                           <ArrowDown className="w-3 h-3" />
                         </button>
                       </div>
 
-                      {/* Collection Actions */}
-                      <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-0.5 transition-opacity">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onCreateFolder(collection.id); }}
-                          className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-amber-400"
-                          title={t.addFolder}
-                        >
-                          <FolderPlus className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onCreateRequest(collection.id); }}
-                          className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-emerald-400"
-                          title={t.addRequest}
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onDeleteNode(collection.id, collection.id); }}
-                          className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-rose-400"
-                          title="Delete Collection"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); startRename(collection.id, collection.name, 'collection'); }}
+                        className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-brand-accent"
+                        title={t.renameCollection || 'Rename Collection'}
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onCreateFolder(collection.id); }}
+                        className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-amber-400"
+                        title={t.addFolder}
+                      >
+                        <FolderPlus className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onCreateRequest(collection.id); }}
+                        className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-emerald-400"
+                        title={t.addRequest}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDeleteNode(collection.id, collection.id); }}
+                        className="p-1 hover:bg-dark-700 rounded text-slate-400 hover:text-rose-400"
+                        title="Delete Collection"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
                     </div>
                   </div>
 

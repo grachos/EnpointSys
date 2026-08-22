@@ -9,6 +9,7 @@ export default function TabManager({ tabs, activeTabId, onSelectTab, onCloseTab,
           const isActive = tab.id === activeTabId;
           const method = (tab.request.method || 'GET').toUpperCase();
           const name = tab.request.name || 'Untitled Request';
+          const isDirty = !!tab.isDirty;
 
           const getMethodClass = (m) => {
             switch (m) {
@@ -25,6 +26,7 @@ export default function TabManager({ tabs, activeTabId, onSelectTab, onCloseTab,
             <div
               key={tab.id}
               onClick={() => onSelectTab(tab.id)}
+              title={`${name}${isDirty ? ' *' : ''}`}
               className={`group flex items-center space-x-2 px-3 py-1.5 rounded-t-lg text-xs cursor-pointer border-t border-x transition-all min-w-[130px] max-w-[200px] ${
                 isActive
                   ? 'bg-dark-900 border-dark-800 text-slate-100 font-semibold shadow-sm tab-item-active'
@@ -35,6 +37,11 @@ export default function TabManager({ tabs, activeTabId, onSelectTab, onCloseTab,
                 {method}
               </span>
               <span className="truncate flex-1 font-medium">{name}</span>
+              {isDirty && (
+                <span className="text-amber-400 font-bold text-sm leading-none flex-shrink-0" title="Unsaved changes">
+                  *
+                </span>
+              )}
 
               {tabs.length > 1 && (
                 <button
